@@ -1,0 +1,17 @@
+version: '3'
+services:
+  nginx:
+    restart: always
+    build: 
+      dockerfile: Dockerfile.dev
+      context: ./nginx
+    ports:
+      - '3000:80'
+  front-end:
+    stdin_open: true
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./front-end
+    volumes:
+      - /app/node_modules
+      - ./front-end:/app
