@@ -15,3 +15,11 @@ services:
     volumes:
       - /app/node_modules
       - ./front-end:/app
+  ml-serving:
+    build:
+      dockerfile: Dockerfile
+      context: ./ml-serving
+    volumes:
+      - ./ml-serving/saved_model:/models/mnist
+    environment:
+      - MODEL_NAME=mnist
