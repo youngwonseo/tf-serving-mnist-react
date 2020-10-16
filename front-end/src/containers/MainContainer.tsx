@@ -9,6 +9,7 @@ import Prediction from '../components/Prediction';
 import Button from '../components/Button';
 
 import {
+  initialize,
   predict,
 } from '../modules/base';
 
@@ -58,15 +59,10 @@ const MainContainer: React.FC<MainContainerProps> = () => {
   const [boundedCtx, setBoundedCtx] = useState<any>();
   const [mnistCtx, setMnistCtx] = useState<any>();
   
-  const [data, setData] = useState<any>({
-    labels: ['0','1','2','3','4','5','6','7','8','9'],
-    datasets: [
-      {
-        data: result.predictions[0],
-        backgroundColor: '#4c6ef5'
-      }
-    ]
-  })
+
+  // redux로 넘김
+  
+  // const [data, setData] = useState<any>(initData);
 
   useEffect(()=>{
     if(canvasRef.current){
@@ -79,6 +75,7 @@ const MainContainer: React.FC<MainContainerProps> = () => {
       
       canvas.addEventListener('mousedown', (e: any)=>{
         ctx.beginPath();
+        ctx.lineWidth = 3;
         pos = { drawable: true, ...getPosition(e) }
         ctx.moveTo(pos.X, pos.Y);
       });
@@ -102,22 +99,8 @@ const MainContainer: React.FC<MainContainerProps> = () => {
   },[]);
 
 
-  useEffect(()=>{
-    setData({
-      ...data,
-      datasets: [{
-        ...data.datasets[0],
-        data: result.predictions[0]
-      }]
-    })
-    
-  },[result]);
 
 
-  // useEffect(()=>{
-  //   console.log(result, error);
-
-  // },[result, error]);
 
 
   const getPosition = (e: any) => {
@@ -150,109 +133,96 @@ const MainContainer: React.FC<MainContainerProps> = () => {
 
   const onPredict = () => {
     
+    if( ctx ) {
+      const imageData = ctx.getImageData(0, 0, width, height);
       
-      if( ctx ) {
-        const imageData = ctx.getImageData(0, 0, width, height);
-        
-        const pixels: number[][] = [[]];
+      const pixels: number[][] = [[]];
 
-        let h=0;
-        let w=0;
-        
-        for(let i=0,n=height * width * 4; i < n; i+=4){
-          const r = imageData.data[i];
-          const g = imageData.data[i+1];
-          const b = imageData.data[i+2];
-          const a = imageData.data[i+3];
+      let h=0;
+      let w=0;
+      
+      for(let i=0,n=height * width * 4; i < n; i+=4){
+        const r = imageData.data[i];
+        const g = imageData.data[i+1];
+        const b = imageData.data[i+2];
+        const a = imageData.data[i+3];
 
-          if (w >= width){
-            w = 0;
-            h++;
-            pixels[h] = [];
-          }
-
-          pixels[h].push(Math.round( a * 100) / 100);
-          w++;
+        if (w >= width){
+          w = 0;
+          h++;
+          pixels[h] = [];
         }
 
-        const boundingRectangle = getBoundingRectable(pixels)
-        
-
-        boundedCtx.drawImage(ctx.canvas, 0, 0);
-        boundedCtx.beginPath();
-        boundedCtx.lineWidth= '1';
-        boundedCtx.strokeStyle= 'red';
-        boundedCtx.rect(
-          boundingRectangle.minX,
-          boundingRectangle.minY,
-          Math.abs(boundingRectangle.minX - boundingRectangle.maxX),
-          Math.abs(boundingRectangle.minY - boundingRectangle.maxY),
-        ); 
-        boundedCtx.stroke();
-        
-
-        
-        const brW = boundingRectangle.maxX + 1 - boundingRectangle.minX;
-        const brH = boundingRectangle.maxY + 1 - boundingRectangle.minY;
-        const scalingFactor = 20 / Math.max(brW, brH);
-
-        console.log(mnistCtx)
-        const img = mnistCtx.createImageData(100, 100);
-        for (var i = img.data.length; --i >= 0; )
-          img.data[i] = 0;
-        mnistCtx.putImageData(img, 100, 100);
-
-        // Reset the tranforms
-        mnistCtx.setTransform(1, 0, 0, 1, 0, 0);
-        
-        // Clear the canvas.
-        // mnistCtx.clearRect(0, 0, 28, 28);
-        // mnistCtx.lineWidth= '1';
-        // mnistCtx.strokeStyle= 'green';
-        // mnistCtx.rect(4, 4, 20, 20); 
-        // mnistCtx.stroke();
-
-        mnistCtx.translate(
-          -brW * scalingFactor / 2,
-          -brH * scalingFactor / 2
-        );
-        mnistCtx.translate(
-          mnistCtx.canvas.width / 2,
-          mnistCtx.canvas.height / 2
-        );
-        mnistCtx.translate(
-          -Math.min(boundingRectangle.minX, boundingRectangle.maxX) * scalingFactor,
-          -Math.min(boundingRectangle.minY, boundingRectangle.maxY) * scalingFactor
-        );
-        mnistCtx.scale(scalingFactor, scalingFactor);
-        
-        // mnistCtx.translate(scaledCtx.width / 2, scaledCtx.height / 2);
-        // mnistCtx.scale(scaleX, scaleY);
-        // mnistCtx.translate(-scaledCtx.width/2, -scaledCtx.height /2);
-        // mnistCtx.clearRect(0, 0, 28, 28);
-        mnistCtx.drawImage(ctx.canvas, 0, 0);
-
-
-
-
-        
-        const data = mnistCtx.getImageData(0, 0, 28, 28).data;
-        const instances : number[] = [];
-
-        for(let i=0,n=784 * 4;i<n;i+=4){
-          instances.push( data[i+3] / 255.0);
-        }
-        console.log(instances)
-        
-        dispatch(predict.request({instances: instances}));
+        pixels[h].push(Math.round( a * 100) / 100);
+        w++;
       }
-    
-    
 
+      const boundingRectangle = getBoundingRectable(pixels)
+      
+
+      boundedCtx.drawImage(ctx.canvas, 0, 0);
+      boundedCtx.beginPath();
+      boundedCtx.lineWidth= '1';
+      boundedCtx.strokeStyle= 'red';
+      boundedCtx.rect(
+        boundingRectangle.minX,
+        boundingRectangle.minY,
+        Math.abs(boundingRectangle.minX - boundingRectangle.maxX),
+        Math.abs(boundingRectangle.minY - boundingRectangle.maxY),
+      ); 
+      boundedCtx.stroke();
+      
+
+      
+      const brW = boundingRectangle.maxX + 1 - boundingRectangle.minX;
+      const brH = boundingRectangle.maxY + 1 - boundingRectangle.minY;
+      const scalingFactor = 20 / Math.max(brW, brH);
+
+  
+      const img = mnistCtx.createImageData(width, height);
+      for (var i = img.data.length; --i >= 0; )
+        img.data[i] = 0;
+      mnistCtx.putImageData(img, 28, 28);
+
+      // Reset the tranforms
+      mnistCtx.setTransform(1, 0, 0, 1, 0, 0);
+      mnistCtx.translate(
+        -brW * scalingFactor / 2,
+        -brH * scalingFactor / 2
+      );
+      mnistCtx.translate(
+        mnistCtx.canvas.width / 2,
+        mnistCtx.canvas.height / 2
+      );
+      mnistCtx.translate(
+        -Math.min(boundingRectangle.minX, boundingRectangle.maxX) * scalingFactor,
+        -Math.min(boundingRectangle.minY, boundingRectangle.maxY) * scalingFactor
+      );
+      mnistCtx.scale(scalingFactor, scalingFactor);
+      
+      mnistCtx.drawImage(ctx.canvas, 0, 0);
+
+
+
+
+      
+      const data = mnistCtx.getImageData(0, 0, 28, 28).data;
+      const instances : number[] = [];
+
+      for(let i=0,n=784 * 4;i<n;i+=4){
+        instances.push( data[i+3] / 255.0);
+      }
+      
+
+      dispatch(predict.request({instances: instances}));
+    }
   }
 
   const onClear = () => {
-    
+    dispatch(initialize());
+    ctx.clearRect(0, 0, width, height);
+    boundedCtx.clearRect(0, 0, width, height);
+    mnistCtx.clearRect(0, 0, width, height);
   }
 
 
@@ -268,7 +238,7 @@ const MainContainer: React.FC<MainContainerProps> = () => {
         <RightIcon/>
         <div>
           <Prediction
-            result={data}
+            result={JSON.parse(JSON.stringify(result))}
             width={300}
             height={200}
           />
