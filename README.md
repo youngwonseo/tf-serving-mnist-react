@@ -1,5 +1,5 @@
 # Handwritten Digit Recognition
-
+* Simple Tensorflow Serving Example
 
 
 ## Tech Stack
@@ -8,13 +8,22 @@
   * Redux
   * Redux Saga
 * Tensorflow
-  * CNN
-* Docker, Docker Compose
+  * MLP
+  * tensorflow model serving api
+* Docker
+  * Docker Compose
+* Nginx
+
+## UI
+![](./capture.png)
+
 
 ## Architectures
+![](./system.png)
 
 
-
+## Run
+>> docker-compose up --build
 
 
 ## References
