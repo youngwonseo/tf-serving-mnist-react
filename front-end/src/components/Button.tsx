@@ -12,13 +12,12 @@ const ButtonWrapper = styled.div`
 `;
 
 
-interface ButtonProps {
+interface Props {
   onClick: any;
   text: string;
 }
 
-
-const Button: React.FC<ButtonProps> = ({
+const Button: React.FC<Props> = ({
   onClick,
   text,
 }) => {
