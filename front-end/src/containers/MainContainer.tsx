@@ -3,10 +3,11 @@ import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { RootState } from '../modules';
 
-import Template, { Title, Contents } from '../components/Template';
+import Template, { Title, Contents, ButtonGroup } from '../components/Template';
 import Canvas from '../components/Canvas';
 import Prediction from '../components/Prediction';
 import Button from '../components/Button';
+import SignaturePad from 'signature_pad';
 
 import {
   initialize,
@@ -23,13 +24,7 @@ const width = 140;
 const height = 140;
 
 
-
-
-interface MainContainerProps {
-
-}
-
-const MainContainer: React.FC<MainContainerProps> = () => {
+const MainContainer: React.FC = () => {
 
   const dispatch = useDispatch();
 
@@ -43,71 +38,22 @@ const MainContainer: React.FC<MainContainerProps> = () => {
     })
   );
 
-  
-  let pos = {
-    drawable: false,
-    X: -1,
-    Y: -1
-  };
-
-
   const canvasRef: any = createRef();
   const boundedCanvasRef: any = createRef();
   const mnistCanvasRef: any = createRef();
-
-  const [ctx, setCtx] = useState<any>();
-  const [boundedCtx, setBoundedCtx] = useState<any>();
-  const [mnistCtx, setMnistCtx] = useState<any>();
   
-
-  // redux로 넘김
-  
-  // const [data, setData] = useState<any>(initData);
 
   useEffect(()=>{
     if(canvasRef.current){
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      
-      setCtx(ctx);
-      setMnistCtx(mnistCanvasRef.current.getContext('2d'));
-      setBoundedCtx(boundedCanvasRef.current.getContext('2d'));
-      
-      canvas.addEventListener('mousedown', (e: any)=>{
-        ctx.beginPath();
-        ctx.lineWidth = 3;
-        pos = { drawable: true, ...getPosition(e) }
-        ctx.moveTo(pos.X, pos.Y);
-      });
-
-      canvas.addEventListener('mousemove', (e: any)=>{
-        if (pos.drawable) {
-          pos = { ...pos, ...getPosition(e)};
-          ctx.lineTo(pos.X, pos.Y);
-          ctx.stroke();
-        }
-      });
-
-      canvas.addEventListener('mouseup', (e: any)=>{
-        pos = {drawable: false, X: -1, Y: -1};
-      });
-
-      canvas.addEventListener('mouseout', (e: any)=>{
-        pos = {drawable: false, X: -1, Y: -1};
-      });
+      new SignaturePad(canvasRef.current);
     }
   },[]);
-
-
-
-
-
-
-  const getPosition = (e: any) => {
-    return { X: e.offsetX, Y: e.offsetY };
-  }
-
-
+  
+  /**
+   * 
+   * @param img 
+   * @param threshold 
+   */
   const getBoundingRectable = (img: number[][], threshold = 0.01) => {
     const rows = img.length;
     const columns= img[0].length;
@@ -131,11 +77,15 @@ const MainContainer: React.FC<MainContainerProps> = () => {
   }
   
 
-  const onPredict = () => {
+
+
+  const handlePredict = () => {
     
-    if( ctx ) {
-      const imageData = ctx.getImageData(0, 0, width, height);
-      
+      const canvasCtx = canvasRef.current.getContext('2d');
+      const boundedCtx = boundedCanvasRef.current.getContext('2d');
+      const mnistCtx = mnistCanvasRef.current.getContext('2d');
+
+      const imageData = canvasCtx.getImageData(0, 0, width, height);
       const pixels: number[][] = [[]];
 
       let h=0;
@@ -157,10 +107,10 @@ const MainContainer: React.FC<MainContainerProps> = () => {
         w++;
       }
 
-      const boundingRectangle = getBoundingRectable(pixels)
-      
 
-      boundedCtx.drawImage(ctx.canvas, 0, 0);
+      const boundingRectangle = getBoundingRectable(pixels);
+      
+      boundedCtx.drawImage(canvasCtx.canvas, 0, 0);
       boundedCtx.beginPath();
       boundedCtx.lineWidth= '1';
       boundedCtx.strokeStyle= 'red';
@@ -180,8 +130,8 @@ const MainContainer: React.FC<MainContainerProps> = () => {
 
   
       const img = mnistCtx.createImageData(width, height);
-      for (var i = img.data.length; --i >= 0; )
-        img.data[i] = 0;
+      for (var i = img.data.length; --i >= 0; ) img.data[i] = 0;
+
       mnistCtx.putImageData(img, 28, 28);
 
       // Reset the tranforms
@@ -200,10 +150,7 @@ const MainContainer: React.FC<MainContainerProps> = () => {
       );
       mnistCtx.scale(scalingFactor, scalingFactor);
       
-      mnistCtx.drawImage(ctx.canvas, 0, 0);
-
-
-
+      mnistCtx.drawImage(canvasRef.current.getContext('2d').canvas, 0, 0);
 
       
       const data = mnistCtx.getImageData(0, 0, 28, 28).data;
@@ -213,18 +160,20 @@ const MainContainer: React.FC<MainContainerProps> = () => {
         instances.push( data[i+3] / 255.0);
       }
       
-
       dispatch(predict.request({instances: instances}));
-    }
   }
 
-  const onClear = () => {
+
+
+  const handleClear = () => {
     dispatch(initialize());
-    ctx.clearRect(0, 0, width, height);
+    const canvasCtx = canvasRef.current.getContext('2d');
+    const boundedCtx = boundedCanvasRef.current.getContext('2d');
+    const mnistCtx = mnistCanvasRef.current.getContext('2d');
+    canvasCtx.clearRect(0, 0, width, height);
     boundedCtx.clearRect(0, 0, width, height);
     mnistCtx.clearRect(0, 0, width, height);
   }
-
 
   return(
     <Template>
@@ -244,10 +193,10 @@ const MainContainer: React.FC<MainContainerProps> = () => {
           />
         </div>
       </Contents>
-      <Contents>
-        <Button onClick={onPredict} text={'Prediction'}/>
-        <Button onClick={onClear} text={'Clear'}/>
-      </Contents>
+      <ButtonGroup>
+        <Button onClick={handlePredict} text={'Prediction'}/>
+        <Button onClick={handleClear} text={'Clear'}/>
+      </ButtonGroup>
     </Template>
   );
 }
