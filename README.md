@@ -15,7 +15,7 @@
 * Nginx
 
 ## UI
-![](./capture.png)
+![](./tf-demo.gif)
 
 
 ## Architectures
